@@ -23,7 +23,46 @@ class FarmerController extends Controller
         $current_date_time=Carbon::now()->format('Y-m-d');
 
         // dd($current_date_time);
-            $purchase=FarmerOrder::paginate(10);
+            // $purchase=FarmerOrder::paginate(10);
+
+
+            $query = FarmerOrder::query();
+
+        if ($request->start_date!=null && $request->end_date!=null){
+
+
+            $query->whereBetween('cutting_date', [$request->start_date, $request->end_date]);
+        }
+        elseif ($request->start_date!=null) {
+
+            $query->where('cutting_date', '>=', $request->start_date);
+        }
+        elseif ($request->end_date!=null) {
+
+            $query->where('cutting_date', '<=', $request->end_date);
+        }
+
+        if($request->planted_area!=null)
+        {
+            $query->where('planted_area', $request->planted_area);
+
+        }
+
+        if($request->weight!=null)
+        {
+            $query->where('weight', $request->weight);
+
+        }
+
+        if($request->tree_count!=null)
+        {
+            $query->where('tree_count', $request->tree_count);
+
+        }
+
+        $purchase = $query->paginate(10);
+
+
 
         // dd($farmers);
             if ($purchase->isEmpty()) {
@@ -116,6 +155,14 @@ class FarmerController extends Controller
         $token_data = json_decode($is_token->content(), true);
         $login_data = $token_data['data'];
 
+
+        $farmer=Farmer::find($request->farmer_id);
+        if(!$farmer)
+        {
+            return  response()->json(array(
+                'message' => 'Farmer  Not Found'
+            ), 404);
+        }
 
         $threeDaysBefore = Carbon::parse($request->cutting_date)->subDays(3)->format('Y-m-d');
 

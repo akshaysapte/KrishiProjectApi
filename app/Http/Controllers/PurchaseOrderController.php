@@ -80,7 +80,21 @@ class PurchaseOrderController extends Controller
 
         $current_date_time=Carbon::now()->format('Y-m-d');
 
-        $purchaseOrders=PurchaseOrder::whereDate('show_purchase_date','<=', $current_date_time)->paginate(10);
+        // $purchaseOrders=PurchaseOrder::whereDate('show_purchase_date','<=', $current_date_time)->paginate(10);
+
+
+        $query = PurchaseOrder::query();
+
+        if ($request->date!=null){
+
+
+            $query->where('purchase_date', $request->date);
+        }
+
+        $query->whereDate('show_purchase_date','<=', $current_date_time);
+
+        $purchaseOrders = $query->paginate(10);
+
 
 
         if ($purchaseOrders->isEmpty()) {

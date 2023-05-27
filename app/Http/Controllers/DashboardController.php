@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceCost;
 use App\Models\InvoiceInformation;
 use App\Models\Merchant;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -101,10 +102,48 @@ class DashboardController extends Controller
     public function purchaseDashboardDetail(Request $request)
     {
 
-        $farmers=Farmer::all();
+        $query = Farmer::query();
 
-        $invoice=Invoice::where('type',2);
-        $invoiceIds=Invoice::where('type',2)->pluck('id')->toArray();
+        $query_ivoice=Invoice::query();
+
+
+        if ($request->start_date!=null && $request->end_date!=null){
+            $start_datetime = Carbon::parse($request->start_date)->startOfDay();
+            $end_datetime = Carbon::parse($request->end_date)->endOfDay();
+
+            $query->whereBetween('created_at', [$start_datetime, $end_datetime]);
+            $query_ivoice->whereBetween('date', [$request->start_date, $request->end_date]);
+
+        }
+        elseif ($request->start_date!=null) {
+            $start_datetime = Carbon::parse($request->start_date)->startOfDay();
+
+            $query->where('created_at', '>=', $start_datetime);
+            $query_ivoice->where('date', '>=', $request->start_date);
+
+        }
+        elseif ($request->end_date!=null) {
+            $end_datetime = Carbon::parse($request->end_date)->endOfDay();
+
+            $query->where('created_at', '<=', $end_datetime);
+            $query_ivoice->where('date', '<=', $request->end_date);
+
+        }
+
+        $farmers = $query->get();
+
+
+        $query_ivoice->where('type',2);
+        $invoice=$query_ivoice->get();
+
+
+
+        // $farmers=Farmer::all();
+
+        // $invoice=Invoice::where('type',2);
+        $invoiceIds=$invoice->pluck('id')->toArray();
+
+        // dd($invoiceIds);
         $invoiceInformation=InvoiceInformation::whereIn('invoice_id',$invoiceIds);
 
         $invoiceCost=InvoiceCost::whereIn('invoice_id',$invoiceIds);
@@ -113,8 +152,8 @@ class DashboardController extends Controller
 
         return  response()->json(array(
             'farmer_count' => $farmers->count(),
-            'total_weight' => round($invoiceInformation->sum('actual_weight')/$invoice->count(), 2),
-            'total_rate' => round($invoiceInformation->sum('rate')/$invoice->count(), 2),
+            'total_weight' => ($invoice->count()>0) ?round($invoiceInformation->sum('actual_weight')/$invoice->count(), 2):0,
+            'total_rate' => ($invoice->count()>0) ?round($invoiceInformation->sum('rate')/$invoice->count(), 2):0,
             'overall_total' => $invoiceCost->sum('overall_total'),
         ), 200);
 
@@ -123,10 +162,47 @@ class DashboardController extends Controller
 
     public function sellDashboardDetail(Request $request)
     {
-        $merchants=Merchant::all();
 
-        $invoice=Invoice::where('type',1);
-        $invoiceIds=Invoice::where('type',1)->pluck('id')->toArray();
+
+        $query = Merchant::query();
+
+        $query_ivoice=Invoice::query();
+
+
+        if ($request->start_date!=null && $request->end_date!=null){
+            $start_datetime = Carbon::parse($request->start_date)->startOfDay();
+            $end_datetime = Carbon::parse($request->end_date)->endOfDay();
+
+            $query->whereBetween('created_at', [$start_datetime, $end_datetime]);
+            $query_ivoice->whereBetween('date', [$request->start_date, $request->end_date]);
+
+        }
+        elseif ($request->start_date!=null) {
+            $start_datetime = Carbon::parse($request->start_date)->startOfDay();
+
+            $query->where('created_at', '>=', $start_datetime);
+            $query_ivoice->where('date', '>=', $request->start_date);
+
+        }
+        elseif ($request->end_date!=null) {
+            $end_datetime = Carbon::parse($request->end_date)->endOfDay();
+
+            $query->where('created_at', '<=', $end_datetime);
+            $query_ivoice->where('date', '<=', $request->end_date);
+
+        }
+
+        $merchants = $query->get();
+
+        $query_ivoice->where('type',1);
+        $invoice=$query_ivoice->get();
+
+
+
+        // $merchants=Merchant::all();
+
+        // $invoice=Invoice::where('type',1);
+        $invoiceIds=$invoice->pluck('id')->toArray();
         $invoiceInformation=InvoiceInformation::whereIn('invoice_id',$invoiceIds);
 
         $invoiceCost=InvoiceCost::whereIn('invoice_id',$invoiceIds);
@@ -135,8 +211,8 @@ class DashboardController extends Controller
 
         return  response()->json(array(
             'merchant_count' => $merchants->count(),
-            'total_weight' => round($invoiceInformation->sum('actual_weight')/$invoice->count(), 2),
-            'total_rate' => round($invoiceInformation->sum('rate')/$invoice->count(), 2),
+            'total_weight' => ($invoice->count()>0) ?round($invoiceInformation->sum('actual_weight')/$invoice->count(), 2):0,
+            'total_rate' => ($invoice->count()>0) ?round($invoiceInformation->sum('rate')/$invoice->count(), 2):0,
             'overall_total' => $invoiceCost->sum('overall_total'),
         ), 200);
     }
